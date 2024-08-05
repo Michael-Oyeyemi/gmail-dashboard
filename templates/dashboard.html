@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>My Website</h1>
+        </div>
+    </header>
+
+    <div class="container content">
+        <div class="centered-box">
+            <div class="box">
+                <h1>Hello, you are logged in as {{ username }}</h1>
+                <a class="home-button" href="{{ url_for('logout') }}">Press here to logout</a>
+                <a class="home-button" href="{{ url_for('user_profile', username=username) }}">YOUR USER PROFILE</a>
+                <div class="tabs">
+                    <button class="tab-link active" onclick="openTab(event, 'positive')">Positive</button>
+                    <button class="tab-link" onclick="openTab(event, 'neutral')">Neutral</button>
+                    <button class="tab-link" onclick="openTab(event, 'negative')">Negative</button>
+                </div>
+                <div id="positive" class="tab-content active">
+                    <h2>Positive Emails</h2>
+                    <ul class="message-list">
+                        {% for message in categorisedMessages['positive'] %}
+                        <li><a href="{{ url_for('view_email', email_id=message.id) }}">{{ message.snippet }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div id="neutral" class="tab-content">
+                    <h2>Neutral Emails</h2>
+                    <ul class="message-list">
+                        {% for message in categorisedMessages['neutral'] %}
+                        <li><a href="{{ url_for('view_email', email_id=message.id) }}">{{ message.snippet }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div id="negative" class="tab-content">
+                    <h2>Negative Emails</h2>
+                    <ul class="message-list">
+                        {% for message in categorisedMessages['negative'] %}
+                        <li><a href="{{ url_for('view_email', email_id=message.id) }}">{{ message.snippet }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 My Website</p>
+        </div>
+    </footer>
+
+    <script>
+        function openTab(evt, tabName) {
+            // Hide all tab contents
+            var tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(function(content) {
+                content.classList.remove('active');
+            });
+
+            // Remove active class from all tab links
+            var tabLinks = document.querySelectorAll('.tab-link');
+            tabLinks.forEach(function(link) {
+                link.classList.remove('active');
+            });
+
+            // Show the current tab and add active class to the clicked tab link
+            document.getElementById(tabName).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+    </script>
+</body>
+</html>

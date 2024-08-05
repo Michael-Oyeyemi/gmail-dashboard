@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Home
+{% endblock %}
+
+{% block content %}
+<div class="centered-box">
+    <div class="box">
+        <h1>Gmail Dashboard</h1>
+        <a href="{{ url_for('login') }}" class="home-button">Log in</a>
+        <a href="{{ url_for('register') }}" class="home-button">Register</a>
+    </div>
+</div>
+{% endblock %}

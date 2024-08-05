@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Login
+{% endblock %}
+
+{% block content %}
+<div class="box">
+    <h1>Login Page</h1>
+    
+    <!-- Flash messages block -->
+    
+    
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        
+        <label for="username">Username</label>
+        {{ form.username }}
+        {% for error in form.username.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+        <br>
+        
+        <label for="password">Password</label>
+        {{ form.password }}
+        {% for error in form.password.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for category, message in messages %}
+                        <li class="{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}        
+        <br>
+        {{ form.submit }}
+    </form>
+
+    <a href="{{ url_for('register') }}">Don't have an account? Sign up</a>
+</div>
+{% endblock %}
