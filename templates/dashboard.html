@@ -16,9 +16,7 @@
     <div class="container content">
         <div class="centered-box">
             <div class="box">
-                <h1>Hello, you are logged in as {{ username }}</h1>
-                <a class="home-button" href="{{ url_for('logout') }}">Press here to logout</a>
-                <a class="home-button" href="{{ url_for('user_profile', username=username) }}">YOUR USER PROFILE</a>
+                <a class="home-button" href="{{ url_for('user_profile', username=username) }}">Profile</a> 
                 <div class="tabs">
                     <button class="tab-link active" onclick="openTab(event, 'positive')">Positive</button>
                     <button class="tab-link" onclick="openTab(event, 'neutral')">Neutral</button>
@@ -48,6 +46,7 @@
                         {% endfor %}
                     </ul>
                 </div>
+                <a class="home-button" href="{{ url_for('logout') }}">Logout</a>
             </div>
         </div>
     </div>

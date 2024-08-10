@@ -98,10 +98,10 @@ header h1 {
 .home-button:hover {
     background-color: #078ba5;
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
-    transform: scale(1.05); /* Slightly scale up on hover */
+    transform: scale(1.05);
 }
 
-/* Form styling */
+
 form {
     display: flex;
     flex-direction: column;
@@ -145,7 +145,7 @@ a {
 }
 
 a:hover {
-    text-decoration: underline;
+    transform: scale(1.05);
 }
 
 /* Footer styling */

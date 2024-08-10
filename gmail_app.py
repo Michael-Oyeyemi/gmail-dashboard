@@ -69,8 +69,7 @@ def login():
         if user and bcrypt.check_password_hash(user.password, form.password.data):
             login_user(user)
             session['username'] = form.username.data
-            if user.credentials:
-                session['credentials'] = user.credentials
+            
             return redirect(url_for('dashboard'))
         else:
             flash('Invalid username and/or password, try again.', 'danger')
@@ -84,8 +83,6 @@ def dashboard():
 
     if not user:
         return redirect(url_for('login'))
-    
-    print(current_user)
 
     
     tokenFileName = f'gmail_token_{username}.json'
@@ -128,8 +125,6 @@ def dashboard():
         'negative': negative,
         'neutral': neutral
     }
-    
-    print(f'categorised messages: {categorisedMessages}')
 
     return render_template('dashboard.html', username=username, categorisedMessages = categorisedMessages)
 
@@ -140,7 +135,6 @@ def logout():
     session.clear()
     if Path('gmail_token.json').is_file():
         os.remove('gmail_token.json')
-    print("User logged out, session cleared")
     return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -152,7 +146,6 @@ def register():
         new_user = User(username=form.username.data, password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
-        print(f"New user registered: {new_user.username}")
 
         return redirect(url_for('login'))
 
@@ -165,7 +158,7 @@ def user_profile(username):
     if not user:
         return "User not found", 404
 
-    return render_template('profile.html', user=user)
+    return render_template('userprofile.html', user=user)
 
 @app.route('/email/<email_id>')
 @login_required
@@ -215,6 +208,24 @@ def analyseSentiment(text):
     
     print(f'weighted sum: {weightedSum}')
     return weightedSum
+
+@app.route('/linkNew')
+def linkNew():
+    if Path('gmail_token.json').is_file():
+        os.remove('gmail_token.json')
+    username = session.get('username')
+    tokenFileName = f'gmail_token_{username}.json'
+    if Path(tokenFileName).is_file():
+        os.remove(tokenFileName)
+    user = User.query.filter_by(username=username).first()
+    user.credentials = None
+    db.session.commit()
+    return redirect(url_for('loading'))
+
+@app.route('/loading')
+def loading():
+    
+    return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':
     with app.app_context():
