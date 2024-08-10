@@ -220,11 +220,6 @@ def linkNew():
     user = User.query.filter_by(username=username).first()
     user.credentials = None
     db.session.commit()
-    return redirect(url_for('loading'))
-
-@app.route('/loading')
-def loading():
-    
     return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':
