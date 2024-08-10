@@ -132,9 +132,12 @@ def dashboard():
 @login_required
 def logout():
     logout_user()
+    username = session.get('username')
     session.clear()
     if Path('gmail_token.json').is_file():
         os.remove('gmail_token.json')
+    if Path(f'gmail_token_{username}.json').is_file():
+        os.remove(f'gmail_token_{username}.json')
     return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
