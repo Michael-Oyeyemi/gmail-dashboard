@@ -138,7 +138,7 @@ def logout():
         os.remove('gmail_token.json')
     if Path(f'gmail_token_{username}.json').is_file():
         os.remove(f'gmail_token_{username}.json')
-    return redirect(url_for('login'))
+    return redirect(url_for('home'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -190,11 +190,9 @@ def analyseSentiment(text):
     
     
     vaderSentiment = vaderAnalyser.polarity_scores(text)['compound']
-    print(f'vader sentiment: {vaderSentiment}')
     
     vectorizedText = vectorizer.transform([text])
     modelPrediction = model.predict(vectorizedText)[0] - 1
-    print(f'model prediction: {modelPrediction}')
     
     blob = TextBlob(text)
     numSentences = len(blob.sentences)
@@ -203,13 +201,9 @@ def analyseSentiment(text):
         total += sentence.sentiment.polarity
     blobSentiment = total / numSentences
     
-    print(f'blob sentiment: {blobSentiment}')
-    
     weightedSum = (weights['vader'] * vaderSentiment +
                    weights['textblob'] * blobSentiment +
                    weights['model'] * modelPrediction)
-    
-    print(f'weighted sum: {weightedSum}')
     return weightedSum
 
 @app.route('/linkNew')
