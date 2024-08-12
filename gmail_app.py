@@ -39,7 +39,7 @@ class User(db.Model, UserMixin):
     credentials = db.Column(db.Text, nullable=True)
     emails = db.relationship('Email', back_populates='user', cascade='all, delete-orphan')
 
-class Emails(db.Model):
+class Email(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sender = db.Column(db.String(320), nullable=False)
     date = db.Column(db.DateTime)
@@ -229,6 +229,19 @@ def linkNew():
     user = User.query.filter_by(username=username).first()
     user.credentials = None
     db.session.commit()
+    return redirect(url_for('dashboard'))
+
+def deleteEmail(email_id):
+    username = session.get('username')
+    gmail = Gmail(creds_file=f'gmail_token_{username}.json')
+    messages = gmail.get_important_messages()
+
+    email_dictionary = {message.id: message for message in messages if message}
+
+    email = email_dictionary.get(email_id)
+    
+    email.move_from_inbox(to='TRASH')
+    
     return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':
