@@ -231,6 +231,7 @@ def linkNew():
     db.session.commit()
     return redirect(url_for('dashboard'))
 
+@app.route('/deleteEmail/<email_id>')
 def deleteEmail(email_id):
     username = session.get('username')
     gmail = Gmail(creds_file=f'gmail_token_{username}.json')
