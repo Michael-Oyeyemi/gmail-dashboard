@@ -13,6 +13,7 @@ import joblib
 from preprocessor import Preprocessor
 from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from datetime import datetime
 
 app = Flask(__name__)
 db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'database.db')
@@ -36,6 +37,17 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
     credentials = db.Column(db.Text, nullable=True)
+    emails = db.relationship('Email', back_populates='user', cascade='all, delete-orphan')
+
+class Emails(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender = db.Column(db.String(320), nullable=False)
+    date = db.Column(db.DateTime)
+    subject = db.Column(db.String(255), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    sentiment = db.Column(db.String(10), nullable=True)
+    username = db.Column(db.String(20), db.ForeignKey('user.username'), nullable=False)
+    user = db.relationship('User', back_populates='emails')
 
 class RegistrationForm(FlaskForm):
     username = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})

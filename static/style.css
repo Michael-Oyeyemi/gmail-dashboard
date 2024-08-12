@@ -214,3 +214,12 @@ footer p {
 .danger{
     color: red;
 }
+
+#Delete{
+    background-color: red;
+    display: inline-block;
+}
+
+#dashboard{
+    display: inline-block;
+}
