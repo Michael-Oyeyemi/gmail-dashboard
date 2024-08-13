@@ -201,13 +201,8 @@ def user_profile(username):
 @app.route('/email/<email_id>')
 @login_required
 def view_email(email_id):
-    username = session.get('username')
-    gmail = Gmail(creds_file=f'gmail_token_{username}.json')
-    messages = gmail.get_important_messages()
-
-    email_dictionary = {message.id: message for message in messages if message}
-
-    email = email_dictionary.get(email_id)
+    
+    email = Email.query.filter_by(id=email_id).first()
 
     return render_template('email.html', email=email)
 
