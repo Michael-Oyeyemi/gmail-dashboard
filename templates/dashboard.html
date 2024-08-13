@@ -15,8 +15,7 @@
 
     <div class="container content">
         <div class="centered-box">
-            <div class="box">
-                <a class="home-button" href="{{ url_for('user_profile', username=username) }}">Profile</a> 
+            <div class="box"> 
                 <div class="tabs">
                     <button class="tab-link active" onclick="openTab(event, 'positive')">Positive</button>
                     <button class="tab-link" onclick="openTab(event, 'neutral')">Neutral</button>
@@ -46,7 +45,8 @@
                         {% endfor %}
                     </ul>
                 </div>
-                <a class="home-button" href="{{ url_for('logout') }}">Logout</a>
+                <a class="home-button" id="profile" href="{{ url_for('user_profile', username=username) }}">Profile</a>
+                <a class="home-button" href="{{ url_for('logout') }}" id="Delete">Logout</a>
             </div>
         </div>
     </div>

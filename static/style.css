@@ -220,6 +220,10 @@ footer p {
     display: inline-block;
 }
 
+#profile{
+    display: inline-block;
+}
+
 #dashboard{
     display: inline-block;
 }

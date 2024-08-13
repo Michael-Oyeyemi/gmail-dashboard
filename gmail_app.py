@@ -40,12 +40,13 @@ class User(db.Model, UserMixin):
     emails = db.relationship('Email', back_populates='user', cascade='all, delete-orphan')
 
 class Email(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(32), primary_key=True)
     sender = db.Column(db.String(320), nullable=False)
-    date = db.Column(db.DateTime)
+    date = db.Column(db.DateTime())
     subject = db.Column(db.String(255), nullable=False)
-    content = db.Column(db.Text, nullable=False)
+    plain = db.Column(db.Text, nullable=False)
     sentiment = db.Column(db.String(10), nullable=True)
+    snippet = db.Column(db.Text, nullable=False)
     username = db.Column(db.String(20), db.ForeignKey('user.username'), nullable=False)
     user = db.relationship('User', back_populates='emails')
 
@@ -113,6 +114,28 @@ def dashboard():
 
     messages = gmail.get_important_messages()
     
+    existingEmailIds = {email.id for email in Email.query.with_entities(Email.id).all()}
+
+    emailsToAdd = [message for message in messages if message.id not in existingEmailIds]
+    
+    for email in emailsToAdd:
+        try:
+            if not email.plain:
+                continue
+            new_email = Email(
+                id=email.id,
+                sender=email.sender,
+                date=datetime.fromisoformat(email.date),
+                subject=email.subject,
+                plain=email.plain,
+                username = user.username,
+                snippet=email.snippet
+            )
+            
+            db.session.add(new_email)
+            db.session.commit()
+        except Exception as e:
+            print(e)
     
     negative = []
     neutral = []
@@ -216,6 +239,7 @@ def analyseSentiment(text):
     weightedSum = (weights['vader'] * vaderSentiment +
                    weights['textblob'] * blobSentiment +
                    weights['model'] * modelPrediction)
+    
     return weightedSum
 
 @app.route('/linkNew')
@@ -229,11 +253,16 @@ def linkNew():
     user = User.query.filter_by(username=username).first()
     user.credentials = None
     db.session.commit()
+    
     return redirect(url_for('dashboard'))
 
 @app.route('/deleteEmail/<email_id>')
 def deleteEmail(email_id):
     username = session.get('username')
+    email = Email.query.filter_by(id=email_id).first()
+    if email:
+        db.session.delete(email)
+        db.session.commit()
     gmail = Gmail(creds_file=f'gmail_token_{username}.json')
     messages = gmail.get_important_messages()
 
