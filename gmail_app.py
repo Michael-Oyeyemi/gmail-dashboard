@@ -84,7 +84,7 @@ def login():
             login_user(user)
             session['username'] = form.username.data
             
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('loading'))
         else:
             flash('Invalid username and/or password, try again.', 'danger')
     return render_template('login.html', form=form)
@@ -213,8 +213,9 @@ def linkNew():
     user = User.query.filter_by(username=username).first()
     user.credentials = None
     db.session.commit()
+    session['reloadEmails'] = True
     
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('loading'))
 
 @app.route('/deleteEmail/<email_id>')
 def deleteEmail(email_id):
@@ -232,7 +233,7 @@ def deleteEmail(email_id):
     
     email.move_from_inbox(to='TRASH')
     
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('loading'))
 
 def assignSentiments(messages):
     negative = []
@@ -312,7 +313,11 @@ def loadCredFile(user):
 @app.route('/reload')
 def reload():
     session['reloadEmails'] = True
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('loading'))
+
+@app.route('/loading')
+def loading():
+    return render_template('loading.html')
 
 if __name__ == '__main__':
     with app.app_context():

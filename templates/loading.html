@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Dashboard
+{% endblock %}
+
+{% block content %}
+<div class="loading-container">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">
+        Connecting gmail<span class="ellipsis"></span>
+    </div>
+</div>
+<script>
+    
+    window.location.href = " {{ url_for('dashboard') }}"
+
+    function changeLoadingText() {
+        const loadingTextElement = document.getElementById('loading-text');
+        loadingTextElement.textContent = 'Loading Emails';
+        loadingTextElement.appendChild(document.createElement('span')).classList.add('ellipsis');
+    }
+
+    // Set timeout to change the text after a specified period
+    setTimeout(changeLoadingText, 5000);
+</script>
+
+{% endblock %}
