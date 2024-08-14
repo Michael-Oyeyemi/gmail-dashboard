@@ -37,6 +37,7 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
     credentials = db.Column(db.Text, nullable=True)
+    emails_loaded = db.Column(db.DateTime, nullable=True)
     emails = db.relationship('Email', back_populates='user', cascade='all, delete-orphan')
 
 class Email(db.Model):
@@ -96,65 +97,29 @@ def dashboard():
 
     if not user:
         return redirect(url_for('login'))
+    
+    reload = session.get('reloadEmails', False)
 
-    
-    tokenFileName = f'gmail_token_{username}.json'
-    if user.credentials:
-        if not Path(tokenFileName).is_file():
-            with open(tokenFileName, 'w') as gmailtoken:
-                json.dump(json.loads(user.credentials), gmailtoken)
-    else:
-        gmail = Gmail()
-        user.credentials = gmail.creds.to_json()
-        db.session.commit()
-        with open(tokenFileName, 'w') as gmailtoken:
-            json.dump(json.loads(user.credentials), gmailtoken)
-    
-    gmail = Gmail(creds_file=tokenFileName)
+    if not user.emails_loaded or (datetime.now() - user.emails_loaded).total_seconds() > 86400 or reload:
+        messages = initialLoad(user)
+        existingEmailIds = {email.id for email in Email.query.with_entities(Email.id).all()}
+        emailsToAdd = [message for message in messages if message.id not in existingEmailIds]
+        session['reloadEmails'] = False
 
-    messages = gmail.get_important_messages()
-    
-    existingEmailIds = {email.id for email in Email.query.with_entities(Email.id).all()}
-
-    emailsToAdd = [message for message in messages if message.id not in existingEmailIds]
-    
-    for email in emailsToAdd:
-        try:
-            if not email.plain:
-                continue
-            new_email = Email(
-                id=email.id,
-                sender=email.sender,
-                date=datetime.fromisoformat(email.date),
-                subject=email.subject,
-                plain=email.plain,
-                username = user.username,
-                snippet=email.snippet
-            )
-            
-            db.session.add(new_email)
+        if emailsToAdd:
+            addNewEmails(user, emailsToAdd)
+            user.emails_loaded = datetime.now()
             db.session.commit()
-        except Exception as e:
-            print(e)
+            negative, neutral, positive = assignSentiments(messages)
+        else:
+            negative, neutral, positive = [], [], []
+    else:
+        loadCredFile(user)
+        emails = Email.query.all()
+        negative = [message for message in emails if message.sentiment == 'negative']
+        neutral = [message for message in emails if message.sentiment == 'neutral']
+        positive = [message for message in emails if message.sentiment == 'positive']
     
-    negative = []
-    neutral = []
-    positive = []
-    
-    length = min(100, len(messages))
-
-    for message in messages[:length]:
-        try:
-            text = message.plain
-            sentimentScore = analyseSentiment(text)
-            if -0.4 <= sentimentScore <= 0.4:
-                neutral.append(message)
-            elif sentimentScore > 0.4:
-                positive.append(message)
-            else:
-                negative.append(message)
-        except Exception as e:
-            print(f"Error processing text: {e}")
     categorisedMessages = {
         'positive': positive,
         'negative': negative,
@@ -259,7 +224,7 @@ def deleteEmail(email_id):
         db.session.delete(email)
         db.session.commit()
     gmail = Gmail(creds_file=f'gmail_token_{username}.json')
-    messages = gmail.get_important_messages()
+    messages = gmail.get_messages(query='category:primary')
 
     email_dictionary = {message.id: message for message in messages if message}
 
@@ -267,6 +232,86 @@ def deleteEmail(email_id):
     
     email.move_from_inbox(to='TRASH')
     
+    return redirect(url_for('dashboard'))
+
+def assignSentiments(messages):
+    negative = []
+    neutral = []
+    positive = []
+    
+    length = min(100, len(messages))
+
+    for message in messages[:length]:
+        try:
+            text = message.plain
+            email = Email.query.filter_by(id=message.id).first()
+            sentimentScore = analyseSentiment(text)
+            if -0.4 <= sentimentScore <= 0.4:
+                neutral.append(message)
+                email.sentiment = 'neutral'
+            elif sentimentScore > 0.4:
+                positive.append(message)
+                email.sentiment = 'positive'
+            else:
+                email.sentiment = 'negative'
+                negative.append(message)
+            db.session.commit()
+        except Exception as e:
+            print(f"Error processing text: {e}")
+    
+    return negative, neutral, positive
+
+def addNewEmails(user, emailsToAdd):
+    
+    for email in emailsToAdd:
+        try:
+            if not email.plain:
+                continue
+            new_email = Email(
+                id=email.id,
+                sender=email.sender,
+                date=datetime.fromisoformat(email.date),
+                subject=email.subject,
+                plain=email.plain,
+                username = user.username,
+                snippet=email.snippet
+            )
+            
+            db.session.add(new_email)
+            db.session.commit()
+        except Exception as e:
+            print(e)
+
+def initialLoad(user):
+    tokenFileName = f'gmail_token_{user.username}.json'
+    if user.credentials:
+        if not Path(tokenFileName).is_file():
+            with open(tokenFileName, 'w') as gmailtoken:
+                json.dump(json.loads(user.credentials), gmailtoken)
+    else:
+        gmail = Gmail()
+        user.credentials = gmail.creds.to_json()
+        db.session.commit()
+        with open(tokenFileName, 'w') as gmailtoken:
+            json.dump(json.loads(user.credentials), gmailtoken)
+    
+    gmail = Gmail(creds_file=tokenFileName)
+
+    messages = gmail.get_messages(query='category:primary')
+    
+    return messages
+
+def loadCredFile(user):
+    tokenFileName = f'gmail_token_{user.username}.json'
+    
+    if user.credentials:
+        if not Path(tokenFileName).is_file():
+            with open(tokenFileName, 'w') as gmailtoken:
+                json.dump(json.loads(user.credentials), gmailtoken)
+
+@app.route('/reload')
+def reload():
+    session['reloadEmails'] = True
     return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':
