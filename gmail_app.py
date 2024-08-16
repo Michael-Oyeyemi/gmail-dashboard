@@ -212,6 +212,9 @@ def linkNew():
         os.remove(tokenFileName)
     user = User.query.filter_by(username=username).first()
     user.credentials = None
+    emails = Email.query.filter_by(username=username).all()
+    for email in emails:
+        db.session.delete(email)
     db.session.commit()
     session['reloadEmails'] = True
     
