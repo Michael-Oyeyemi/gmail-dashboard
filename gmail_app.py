@@ -14,6 +14,7 @@ from preprocessor import Preprocessor
 from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from datetime import datetime
+from sqlalchemy.exc import SQLAlchemyError
 
 app = Flask(__name__)
 db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'database.db')
@@ -107,9 +108,15 @@ def dashboard():
         session['reloadEmails'] = False
 
         if emailsToAdd:
-            addNewEmails(user, emailsToAdd)
-            user.emails_loaded = datetime.now()
-            db.session.commit()
+            try:
+                addNewEmails(user, emailsToAdd)
+                user.emails_loaded = datetime.now()
+                db.session.commit()
+            except SQLAlchemyError as e:
+                db.session.rollback()
+                app.logger.error(f"Database error: {str(e)}")
+                flash('An error occurred while processing your request. Please try again later.', 'danger')
+                return render_template(url_for('dashboard'))
             negative, neutral, positive = assignSentiments(messages)
         else:
             negative, neutral, positive = [], [], []
@@ -145,10 +152,16 @@ def register():
     form = RegistrationForm()
 
     if form.validate_on_submit():
-        hashed_password = bcrypt.generate_password_hash(form.password.data)
-        new_user = User(username=form.username.data, password=hashed_password)
-        db.session.add(new_user)
-        db.session.commit()
+        try:
+            hashed_password = bcrypt.generate_password_hash(form.password.data)
+            new_user = User(username=form.username.data, password=hashed_password)
+            db.session.add(new_user)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            db.session.rollback
+            app.logger.error(f"Database error: {str(e)}")
+            flash('An error occurred while processing your request. Please try again later.', 'danger')
+            return render_template(url_for('register'), form=form)
 
         return redirect(url_for('login'))
 
@@ -213,9 +226,15 @@ def linkNew():
     user = User.query.filter_by(username=username).first()
     user.credentials = None
     emails = Email.query.filter_by(username=username).all()
-    for email in emails:
-        db.session.delete(email)
-    db.session.commit()
+    try:
+        for email in emails:
+            db.session.delete(email)
+        db.session.commit()
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        app.logger.error(f"Database error: {str(e)}")
+        flash('An error occurred while processing your request. Please try again later.', 'danger')
+        return render_template(url_for('loading'))
     session['reloadEmails'] = True
     
     return redirect(url_for('loading'))
