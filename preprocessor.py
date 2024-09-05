@@ -17,7 +17,10 @@ class Preprocessor():
         text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
         text = re.sub(r'\@w+|\#', '', text)
         text = re.sub(r'[^a-zA-Z]', ' ', text)
+        text = re.sub(r'\[image:.*?\]', '', text)
+        text = re.sub(r'<img.*?>', '', text)
         text = text.lower()
+        text = re.sub(r'\s+', ' ', text).strip()
 
         return text
 
