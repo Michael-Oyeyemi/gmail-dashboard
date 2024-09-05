@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, url_for, redirect, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user 
-from wtforms import StringField, PasswordField, SubmitField
+from wtforms import StringField, PasswordField, SubmitField, SelectField
 from wtforms.validators import InputRequired, Length, ValidationError
 from flask_bcrypt import Bcrypt
 from flask_wtf import FlaskForm
@@ -40,6 +40,8 @@ class User(db.Model, UserMixin):
     credentials = db.Column(db.Text, nullable=True)
     emails_loaded = db.Column(db.DateTime, nullable=True)
     emails = db.relationship('Email', back_populates='user', cascade='all, delete-orphan')
+    securityQuestion = db.Column(db.String(50), nullable=False)
+    securityAnswer = db.Column(db.String(120), nullable=False)
 
 class Email(db.Model):
     id = db.Column(db.String(32), primary_key=True)
@@ -56,6 +58,18 @@ class RegistrationForm(FlaskForm):
     username = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
 
     password = PasswordField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Password"})
+    
+    securityQuestion = SelectField(
+        'Security Question',
+        choices=[
+            ('motherMaiden', 'What is your mother\'s maiden name?'),
+            ('firstPet', 'What was your first pet\'s name?'),
+            ('homeTown', 'What city/town were you born in?')
+        ],
+        validators=[InputRequired()]
+    )
+    
+    securityAnswer = StringField(validators=[InputRequired(), Length(min=2, max=50)], render_kw={"placeholder": "Answer"})
 
     submit = SubmitField("Register")
 
@@ -154,7 +168,12 @@ def register():
     if form.validate_on_submit():
         try:
             hashed_password = bcrypt.generate_password_hash(form.password.data)
-            new_user = User(username=form.username.data, password=hashed_password)
+            hashedAnswer = bcrypt.generate_password_hash(form.securityAnswer.data)
+            new_user = User(username=form.username.data, 
+                            password=hashed_password,
+                            securityQuestion = form.securityQuestion.data, 
+                            securityAnswer = hashedAnswer
+                            )
             db.session.add(new_user)
             db.session.commit()
         except SQLAlchemyError as e:

@@ -23,6 +23,20 @@ Register
             <span style="color: red;">{{ error }}</span>
         {% endfor %}
         <br>
+
+        <label for="security_question">Select a Security Question</label>
+        {{ form.securityQuestion }}
+        {% for error in form.securityQuestion.errors %}
+            <span style="color: red;">{{ error }}</span>
+        {% endfor %}
+        <br>
+
+        <label for="security_answer">Your Answer</label>
+        {{ form.securityAnswer }}
+        {% for error in form.securityAnswer.errors %}
+            <span style="color: red;">{{ error }}</span>
+        {% endfor %}
+        <br>
         
         {{ form.submit }}
     </form>
