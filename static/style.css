@@ -60,7 +60,7 @@ header h1 {
     align-items: center;
     justify-content: center;
     width: 100%;
-    max-width: 600px;
+    max-width: 100%;
     padding: 2rem;
 }
 
@@ -72,6 +72,8 @@ header h1 {
     padding: 2rem;
     text-align: center;
     border: 2px solid #07c3e9; /* Add border to box */
+    max-width: 100%;
+    overflow: hidden;
 }
 
 /* Styling for the title */
@@ -193,6 +195,17 @@ footer p {
 .tab-content {
     display: none;
     padding: 1rem 0;
+    height: 300px; /* Fixed height to allow scrolling */
+    overflow-y: auto;
+}
+
+.email-content{
+    height: 300px; /* Fixed height to allow scrolling */
+    overflow-y: auto;
+    word-wrap: break-word;
+    word-break: break-all;
+    white-space: normal;
+    padding: 1rem;
 }
 
 .tab-content.active {
