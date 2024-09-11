@@ -215,6 +215,10 @@ footer p {
     color: red;
 }
 
+.green{
+    color: rgb(76, 215, 76);
+}
+
 #Delete{
     background-color: red;
     display: inline-block;

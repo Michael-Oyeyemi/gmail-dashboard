@@ -1,9 +1,9 @@
 import os
-from flask import Flask, render_template, url_for, redirect, session, flash
+from flask import Flask, render_template, url_for, redirect, session, flash, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user 
 from wtforms import StringField, PasswordField, SubmitField, SelectField
-from wtforms.validators import InputRequired, Length, ValidationError
+from wtforms.validators import InputRequired, Length, ValidationError, EqualTo
 from flask_bcrypt import Bcrypt
 from flask_wtf import FlaskForm
 from simplegmail import Gmail
@@ -86,6 +86,28 @@ class LoginForm(FlaskForm):
 
     submit = SubmitField("Login")
 
+class forgotPasswordForm(FlaskForm):
+    username = StringField(validators=[InputRequired(), Length(min=4,max=20)], render_kw={'placeholder': 'Username'})
+    
+    submit = SubmitField('Reset Password')
+    
+    def validate_username(self, username):
+        existing_user_username = User.query.filter_by(username=username.data).first()
+
+        if not existing_user_username:
+            raise ValidationError("No account with that username found, try again.")
+
+class resetPasswordForm(FlaskForm):
+    securityAttempt = StringField(validators=[InputRequired(), Length(min=4, max=50)], render_kw={"placeholder": "Answer"})
+    
+    newPassword = PasswordField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={'placeholder': 'New Password'})
+    
+    confirmPassword = PasswordField(validators=[InputRequired(), EqualTo('newPassword', message='Passwords must match.')], render_kw={'placeholder': 'Confirm password'})
+    
+    submit = SubmitField('Change Password')
+    
+        
+
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -93,6 +115,8 @@ def home():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
+    if '/resetPassword/' in request.referrer:
+        flash('Password successfully changed', 'green')
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user and bcrypt.check_password_hash(user.password, form.password.data):
@@ -103,6 +127,16 @@ def login():
         else:
             flash('Invalid username and/or password, try again.', 'danger')
     return render_template('login.html', form=form)
+
+@app.route('/forgotPassword', methods=['GET', 'POST'])
+def forgotPassword():
+    form = forgotPasswordForm()
+    if form.validate_on_submit():
+        username = form.username.data
+    
+        return redirect(url_for('resetPassword', username=username))
+    
+    return render_template('forgotPassword.html', form=form)
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 @login_required
@@ -359,6 +393,35 @@ def reload():
 @app.route('/loading')
 def loading():
     return render_template('loading.html')
+
+@app.route('/resetPassword/<username>', methods=['GET', 'POST'])
+def resetPassword(username):
+    form = resetPasswordForm()
+    user = User.query.filter_by(username=username).first()
+    choices = {'motherMaiden': 'What is your mother\'s maiden name?',
+                'firstPet': 'What was your first pet\'s name?',
+                'homeTown': 'What city/town were you born in?'}
+    
+    if form.validate_on_submit():
+        hashedAnswer = bcrypt.check_password_hash(user.securityAnswer, form.securityAttempt.data)
+        same = bcrypt.check_password_hash(user.password, form.newPassword.data)
+        if hashedAnswer:
+            if not same:
+                try:
+                    newPasswordHashed = bcrypt.generate_password_hash(form.newPassword.data)
+                    user.password = newPasswordHashed
+                    db.session.commit()
+                    return redirect(url_for('login'))
+                except SQLAlchemyError as e:
+                    db.session.rollback()
+                    app.logger.error(f"Database error: {str(e)}")
+                    flash('An error occurred while processing your request. Please try again later.', 'danger')
+            else:
+                flash('That is the same password you had before monkey', 'danger')
+        else:
+            flash('Incorrect answer to security question, Try again', 'danger')
+    
+    return render_template('resetPassword.html', form=form, question=choices[user.securityQuestion])
 
 if __name__ == '__main__':
     with app.app_context():

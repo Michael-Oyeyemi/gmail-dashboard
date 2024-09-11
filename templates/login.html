@@ -6,10 +6,20 @@ Login
 
 {% block content %}
 <div class="box">
-    <h1>Login Page</h1>
+    <h1>Login</h1>
     
     <!-- Flash messages block -->
-    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flashes">
+                {% for category, message in messages %}
+                    {% if category == 'green' %}
+                        <li class="{{ category }}">[{{ message }}]</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}        
     
     <form method="POST" action="">
         {{ form.hidden_tag() }}
@@ -31,7 +41,9 @@ Login
             {% if messages %}
                 <ul class="flashes">
                     {% for category, message in messages %}
-                        <li class="{{ category }}">{{ message }}</li>
+                        {% if category == 'danger' %}
+                            <li class="{{ category }}">[{{ message }}]</li>
+                        {% endif %}
                     {% endfor %}
                 </ul>
             {% endif %}
@@ -41,5 +53,6 @@ Login
     </form>
 
     <a href="{{ url_for('register') }}">Don't have an account? Sign up</a>
+    <a href="{{ url_for('forgotPassword') }}">Forgot password? Reset here</a>
 </div>
 {% endblock %}
