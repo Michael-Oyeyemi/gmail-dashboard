@@ -69,7 +69,7 @@ class RegistrationForm(FlaskForm):
         validators=[InputRequired()]
     )
     
-    securityAnswer = StringField(validators=[InputRequired(), Length(min=2, max=50)], render_kw={"placeholder": "Answer"})
+    securityAnswer = StringField(validators=[InputRequired(), Length(min=4, max=50)], render_kw={"placeholder": "Answer"})
 
     submit = SubmitField("Register")
 
@@ -170,7 +170,7 @@ def dashboard():
             negative, neutral, positive = [], [], []
     else:
         loadCredFile(user)
-        emails = Email.query.all()
+        emails = Email.query.filter_by(username=username).all()
         negative = [message for message in emails if message.sentiment == 'negative']
         neutral = [message for message in emails if message.sentiment == 'neutral']
         positive = [message for message in emails if message.sentiment == 'positive']
