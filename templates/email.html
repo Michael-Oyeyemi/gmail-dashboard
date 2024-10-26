@@ -24,6 +24,7 @@
                     <p>{{ email.plain }}</p>
                 </div>
                 <a class="home-button" id="dashboard" href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+                <a class="home-button" id="dashboard" href="{{ url_for('sendEmail', recipient=email.sender) }}">Reply</a>
                 <a class="home-button" id="Delete" href="{{ url_for('deleteEmail', email_id=email.id) }}">Delete Email</a>
             </div>
         </div>

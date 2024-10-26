@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Login
+{% endblock %}
+
+{% block content %}
+<div class="box">
+    <h1>Send Email</h1>
+    
+       
+    
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        
+        <label for="subject">Subject</label>
+        {{ form.subject }}
+        {% for error in form.subject.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+        <br>
+        
+        <label for="content">Content</label>
+        {{ form.message(type='') }}
+        {% for error in form.message.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+      
+        <br>
+        {{ form.submit }}
+    </form>
+
+    <a href="{{ url_for('loading') }}">Dashboard</a>
+</div>
+{% endblock %}

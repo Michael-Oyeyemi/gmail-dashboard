@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, url_for, redirect, session, flash, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user 
-from wtforms import StringField, PasswordField, SubmitField, SelectField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, TextAreaField
 from wtforms.validators import InputRequired, Length, ValidationError, EqualTo
 from flask_bcrypt import Bcrypt
 from flask_wtf import FlaskForm
@@ -15,6 +15,7 @@ from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
+import re
 
 app = Flask(__name__)
 db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'database.db')
@@ -105,6 +106,14 @@ class resetPasswordForm(FlaskForm):
     confirmPassword = PasswordField(validators=[InputRequired(), EqualTo('newPassword', message='Passwords must match.')], render_kw={'placeholder': 'Confirm password'})
     
     submit = SubmitField('Change Password')
+
+class sendEmailForm(FlaskForm):
+    
+    subject = StringField(validators=[InputRequired(), Length(min=1, max=255)], render_kw={'placeholder': 'Subject'})
+    
+    message = TextAreaField(validators=[InputRequired()], render_kw={'placeholder': 'Message', "class": "largeTextbox", "wrap": "soft"})
+    
+    submit = SubmitField('Send Email')
     
         
 
@@ -115,7 +124,7 @@ def home():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-    if '/resetPassword/' in request.referrer:
+    if '/resetPassword/' in request.referrer and session.get('PasswordChanged'):
         flash('Password successfully changed', 'green')
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
@@ -127,6 +136,23 @@ def login():
         else:
             flash('Invalid username and/or password, try again.', 'danger')
     return render_template('login.html', form=form)
+
+@app.route('/sendEmail/<recipient>', methods=['GET', 'POST'])
+def sendEmail(recipient):
+    form = sendEmailForm()
+    recipientEmail = re.search(r'<.*?>', recipient)
+    if form.validate_on_submit():
+        gmail = Gmail(creds_file='gmail_token.json')
+        
+        gmail.send_message(
+            subject=form.subject.data,
+            msg_html=form.message.data,
+            sender='me',
+            to=recipientEmail.group(0)[1:-1]
+        )
+        return redirect(url_for('dashboard'))
+    return render_template('sendEmail.html', form=form)
+
 
 @app.route('/forgotPassword', methods=['GET', 'POST'])
 def forgotPassword():
@@ -310,6 +336,7 @@ def deleteEmail(email_id):
     
     return redirect(url_for('loading'))
 
+
 def assignSentiments(messages):
     negative = []
     neutral = []
@@ -411,6 +438,7 @@ def resetPassword(username):
                     newPasswordHashed = bcrypt.generate_password_hash(form.newPassword.data)
                     user.password = newPasswordHashed
                     db.session.commit()
+                    session['PasswordChanged'] = True
                     return redirect(url_for('login'))
                 except SQLAlchemyError as e:
                     db.session.rollback()

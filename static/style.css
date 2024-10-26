@@ -114,7 +114,7 @@ form {
 form input[type="text"],
 form input[type="password"] {
     width: 100%;
-    max-width: 400px;
+    max-width: 900px;
     padding: 0.8rem;
     border: 1px solid #ddd;
     border-radius: 8px;
@@ -293,4 +293,15 @@ footer p {
     content: '.......';
     display: inline-block;
     animation: ellipsis 1.5s infinite;
+}
+
+.largeTextbox {
+    width: 100%;
+    width: 700px; 
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    overflow-wrap: break-word; 
+    white-space: pre-wrap;
 }
