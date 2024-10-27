@@ -8,11 +8,49 @@ User Profile
 <div class="centered-box">
     <div class="box">
         <h1>User Profile</h1>
-        <p> Username: {{ user.username }}</p>
-        <a class="home-button" href="{{ url_for('linkNew') }}">Link a different gmail</a>
-        <a href="{{ url_for('dashboard') }}" class="home-button">Return</a>
-        <a href="{{ url_for('deleteAccount') }}" class="home-button" id="Delete">Delete Account</a>
-        
+
+        <div class="profileContent">
+    
+            <div class="buttons">
+                <div class="usernameBox">
+                    <p> Username: {{ user.username }}</p>
+                </div>
+                
+                <a href="{{ url_for('dashboard') }}" class="home-button">Return</a>
+                <a class="home-button" href="{{ url_for('linkNew') }}">Link a different gmail</a>
+                <a href="{{ url_for('deleteAccount') }}" class="home-button" id="Delete">Delete Account</a>
+            </div>
+
+            <div class="chart">
+                <h2>Email Sentiment Distribution</h2>
+                <div id="sentiment-chart"></div>
+            </div>
+
+        </div>
     </div>
 </div>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+
+<script>
+    const sentimentData = {{ sentimentCounts | tojson }};
+    const sentimentLabels = Object.keys(sentimentData);
+    const sentimentValues = Object.values(sentimentData);
+
+    const data = [{
+        values: sentimentValues,
+        labels: sentimentLabels,
+        type: 'pie'
+    }];
+
+    const layout = {
+        height: 400,
+        width: 500
+    };
+
+    Plotly.newPlot('sentiment-chart', data, layout);
+</script>
+
+
 {% endblock %}

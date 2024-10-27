@@ -188,16 +188,15 @@ footer p {
     transform: scale(1.05);
 }
 
-/* Tab content styling */
 .tab-content {
     display: none;
     padding: 1rem 0;
-    height: 300px; /* Fixed height to allow scrolling */
+    height: 300px;
     overflow-y: auto;
 }
 
 .email-content{
-    height: 300px; /* Fixed height to allow scrolling */
+    height: 300px;
     overflow-y: auto;
     word-wrap: break-word;
     word-break: break-all;
@@ -259,7 +258,7 @@ footer p {
 .loading-text {
     margin-top: 10px;
     font-size: 32px;
-    color: #333; /* Text color */
+    color: #333;
     background: linear-gradient(45deg, #3498db, #e74c3c);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -301,4 +300,27 @@ footer p {
     font-size: 1rem;
     overflow-wrap: break-word; 
     white-space: pre-wrap;
+}
+
+.profileContent {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+}
+
+.buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.usernameBox {
+    border: 2px solid #07c3e9;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    color: #07c3e9;
+    font-size: 1.5rem;
 }

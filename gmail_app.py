@@ -16,6 +16,7 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
 import re
+import plotly.express as px
 
 app = Flask(__name__)
 db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'database.db')
@@ -265,7 +266,13 @@ def user_profile(username):
     if not user:
         return "User not found", 404
 
-    return render_template('userprofile.html', user=user)
+    sentimentCounts = {
+        'positive': Email.query.filter_by(username=username, sentiment='positive').count(),
+        'negative': Email.query.filter_by(username=username, sentiment='negative').count(),
+        'neutral': Email.query.filter_by(username=username, sentiment='neutral').count()
+    }
+
+    return render_template('userprofile.html', user=user, sentimentCounts=sentimentCounts)
 
 @app.route('/email/<email_id>')
 @login_required
