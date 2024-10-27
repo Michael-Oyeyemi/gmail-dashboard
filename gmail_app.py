@@ -222,6 +222,17 @@ def logout():
         os.remove(f'gmail_token_{username}.json')
     return redirect(url_for('home'))
 
+@app.route('/deleteAccount', methods=['GET', 'POST'])
+@login_required
+def deleteAccount():
+    username = session.get('username')
+    user = User.query.filter_by(username=username).first()
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+    
+    return redirect(url_for('logout'))
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegistrationForm()
