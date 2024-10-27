@@ -141,8 +141,9 @@ def login():
 def sendEmail(recipient):
     form = sendEmailForm()
     recipientEmail = re.search(r'<.*?>', recipient)
+    username = session.get('username')
     if form.validate_on_submit():
-        gmail = Gmail(creds_file='gmail_token.json')
+        gmail = Gmail(creds_file=f'gmail_token_{username}.json')
         
         gmail.send_message(
             subject=form.subject.data,
