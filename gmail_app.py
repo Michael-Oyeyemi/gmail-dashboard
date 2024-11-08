@@ -35,17 +35,20 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-class User(db.Model, UserMixin):
+class baseModel(db.Model):
+    __abstract__ = True
+
+class User(baseModel, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
     credentials = db.Column(db.Text, nullable=True)
-    emails_loaded = db.Column(db.DateTime, nullable=True)
+    emailsLoaded = db.Column(db.DateTime, nullable=True)
     emails = db.relationship('Email', back_populates='user', cascade='all, delete-orphan')
     securityQuestion = db.Column(db.String(50), nullable=False)
     securityAnswer = db.Column(db.String(120), nullable=False)
 
-class Email(db.Model):
+class Email(baseModel):
     id = db.Column(db.String(32), primary_key=True)
     sender = db.Column(db.String(320), nullable=False)
     date = db.Column(db.DateTime())
@@ -56,7 +59,11 @@ class Email(db.Model):
     username = db.Column(db.String(20), db.ForeignKey('user.username'), nullable=False)
     user = db.relationship('User', back_populates='emails')
 
-class RegistrationForm(FlaskForm):
+class baseForm(FlaskForm):
+    def __init__(self, *args, **kwargs):
+        super(baseForm, self).__init__(*args, **kwargs)
+        
+class registrationForm(baseForm):
     username = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
 
     password = PasswordField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Password"})
@@ -81,14 +88,14 @@ class RegistrationForm(FlaskForm):
         if existing_user_username:
             raise ValidationError("Username taken, please use a different one.")
         
-class LoginForm(FlaskForm):
+class loginForm(baseForm):
     username = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
 
     password = PasswordField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Password"})
 
     submit = SubmitField("Login")
 
-class forgotPasswordForm(FlaskForm):
+class forgotPasswordForm(baseForm):
     username = StringField(validators=[InputRequired(), Length(min=4,max=20)], render_kw={'placeholder': 'Username'})
     
     submit = SubmitField('Reset Password')
@@ -99,7 +106,7 @@ class forgotPasswordForm(FlaskForm):
         if not existing_user_username:
             raise ValidationError("No account with that username found, try again.")
 
-class resetPasswordForm(FlaskForm):
+class resetPasswordForm(baseForm):
     securityAttempt = StringField(validators=[InputRequired(), Length(min=4, max=50)], render_kw={"placeholder": "Answer"})
     
     newPassword = PasswordField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={'placeholder': 'New Password'})
@@ -108,7 +115,7 @@ class resetPasswordForm(FlaskForm):
     
     submit = SubmitField('Change Password')
 
-class sendEmailForm(FlaskForm):
+class sendEmailForm(baseForm):
     
     subject = StringField(validators=[InputRequired(), Length(min=1, max=255)], render_kw={'placeholder': 'Subject'})
     
@@ -124,7 +131,7 @@ def home():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    form = LoginForm()
+    form = loginForm()
     if '/resetPassword/' in request.referrer and session.get('PasswordChanged'):
         flash('Password successfully changed', 'green')
     if form.validate_on_submit():
@@ -177,7 +184,7 @@ def dashboard():
     
     reload = session.get('reloadEmails', False)
 
-    if not user.emails_loaded or (datetime.now() - user.emails_loaded).total_seconds() > 86400 or reload:
+    if not user.emailsLoaded or (datetime.now() - user.emailsLoaded).total_seconds() > 86400 or reload:
         messages = initialLoad(user)
         existingEmailIds = {email.id for email in Email.query.with_entities(Email.id).all()}
         emailsToAdd = [message for message in messages if message.id not in existingEmailIds]
@@ -186,7 +193,7 @@ def dashboard():
         if emailsToAdd:
             try:
                 addNewEmails(user, emailsToAdd)
-                user.emails_loaded = datetime.now()
+                user.emailsLoaded = datetime.now()
                 db.session.commit()
             except SQLAlchemyError as e:
                 db.session.rollback()
@@ -236,7 +243,7 @@ def deleteAccount():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    form = RegistrationForm()
+    form = registrationForm()
 
     if form.validate_on_submit():
         try:
