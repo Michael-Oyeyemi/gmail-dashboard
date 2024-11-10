@@ -40,7 +40,7 @@ def load_user(user_id):
 class baseModel(db.Model):
     __abstract__ = True
 
-class EncryptedType(TypeDecorator):
+class encryptedType(TypeDecorator):
     impl = String
 
     def __init__(self, *args, **kwargs):
@@ -48,12 +48,12 @@ class EncryptedType(TypeDecorator):
         self.fernet = Fernet(self.key)
         super().__init__(*args, **kwargs)
     
-    def process_bind_param(self, value, dialect):
+    def process_bind_param(self, value):
         if value is not None:
             value = self.fernet.encrypt(value.encode()).decode()
         return value
     
-    def process_result_value(self, value, dialect):
+    def process_result_value(self, value):
         if value is not None:
             value = self.fernet.decrypt(value.encode()).decode()
         return value
@@ -62,7 +62,7 @@ class User(baseModel, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
-    credentials = db.Column(EncryptedType, nullable=True)
+    credentials = db.Column(encryptedType, nullable=True)
     emailsLoaded = db.Column(db.DateTime, nullable=True)
     emails = db.relationship('Email', back_populates='user', cascade='all, delete-orphan')
     securityQuestion = db.Column(db.String(50), nullable=False)
