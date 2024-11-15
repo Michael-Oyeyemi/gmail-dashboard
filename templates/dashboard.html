@@ -13,6 +13,17 @@
         </div>
     </header>
 
+    {% if passwordAttempts > 0 %}
+    <div id="notificationModal" class="modal">
+        <div class="modal-content">
+            <p style="font-size: 18px;">
+                ⚠️ There have been {{ passwordAttempts }} failed login attempt(s) since your last login. You are advised to change your password.
+            </p>
+            <button onclick="closeModal()">OK</button>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="container content">
         <div class="centered-box">
             <div class="box"> 
@@ -62,22 +73,32 @@
 
     <script>
         function openTab(evt, tabName) {
-            // Hide all tab contents
             var tabContents = document.querySelectorAll('.tab-content');
             tabContents.forEach(function(content) {
                 content.classList.remove('active');
             });
 
-            // Remove active class from all tab links
             var tabLinks = document.querySelectorAll('.tab-link');
             tabLinks.forEach(function(link) {
                 link.classList.remove('active');
             });
 
-            // Show the current tab and add active class to the clicked tab link
             document.getElementById(tabName).classList.add('active');
             evt.currentTarget.classList.add('active');
         }
+
+        function closeModal() {
+            // Hide the modal
+            document.getElementById('notificationModal').style.display = 'none';
+
+            // Show the dashboard content
+            document.querySelector('.content').style.visibility = 'visible';
+        }
+
+        // Show the modal if there are failed attempts
+        {% if passwordAttempts > 0 %}
+        document.getElementById('notificationModal').style.display = 'flex';
+        {% endif %}
     </script>
 </body>
 </html>

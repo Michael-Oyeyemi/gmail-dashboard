@@ -48,12 +48,12 @@ class encryptedType(TypeDecorator):
         self.fernet = Fernet(self.key)
         super().__init__(*args, **kwargs)
     
-    def process_bind_param(self, value):
+    def process_bind_param(self, value, dialect):
         if value is not None:
             value = self.fernet.encrypt(value.encode()).decode()
         return value
     
-    def process_result_value(self, value):
+    def process_result_value(self, value, dialect):
         if value is not None:
             value = self.fernet.decrypt(value.encode()).decode()
         return value
@@ -67,6 +67,8 @@ class User(baseModel, UserMixin):
     emails = db.relationship('Email', back_populates='user', cascade='all, delete-orphan')
     securityQuestion = db.Column(db.String(50), nullable=False)
     securityAnswer = db.Column(db.String(120), nullable=False)
+    passwordAttempts = db.Column(db.Integer, nullable=False, default=0)
+    locked = db.Column(db.Boolean, nullable=False, default=False)
 
 class Email(baseModel):
     id = db.Column(db.String(32), primary_key=True)
@@ -149,6 +151,31 @@ class sendEmailForm(baseForm):
 def home():
     return render_template('home.html')
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    form = registrationForm()
+
+    if form.validate_on_submit():
+        try:
+            hashed_password = bcrypt.generate_password_hash(form.password.data)
+            hashedAnswer = bcrypt.generate_password_hash(form.securityAnswer.data)
+            new_user = User(username=form.username.data, 
+                            password=hashed_password,
+                            securityQuestion = form.securityQuestion.data, 
+                            securityAnswer = hashedAnswer
+                            )
+            db.session.add(new_user)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            db.session.rollback
+            app.logger.error(f"Database error: {str(e)}")
+            flash('An error occurred while processing your request. Please try again later.', 'danger')
+            return render_template(url_for('register'), form=form)
+
+        return redirect(url_for('login'))
+
+    return render_template('register.html', form=form)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = loginForm()
@@ -156,12 +183,23 @@ def login():
         flash('Password successfully changed', 'green')
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
+        if user and user.locked:
+            flash('Account locked due to too many failed login attempts', 'danger')
+            return redirect(url_for('login'))
         if user and bcrypt.check_password_hash(user.password, form.password.data):
             login_user(user)
             session['username'] = form.username.data
             
             return redirect(url_for('loading'))
         else:
+            if user:
+                user.passwordAttempts += 1
+                if user.passwordAttempts >= 5:
+                    user.locked = True
+                    db.session.commit()
+                    flash('Account locked due to too many failed login attempts', 'danger')
+                    return redirect(url_for('login'))
+                db.session.commit()
             flash('Invalid username and/or password, try again.', 'danger')
     return render_template('login.html', form=form)
 
@@ -205,6 +243,10 @@ def dashboard():
     
     reload = session.get('reloadEmails', False)
 
+    passwordAttempts = user.passwordAttempts
+    user.passwordAttempts = 0
+    db.session.commit()
+
     if not user.emailsLoaded or (datetime.now() - user.emailsLoaded).total_seconds() > 86400 or reload:
         messages = initialLoad(user)
         existingEmailIds = {email.id for email in Email.query.with_entities(Email.id).all()}
@@ -237,7 +279,7 @@ def dashboard():
         'neutral': neutral
     }
 
-    return render_template('dashboard.html', username=username, categorisedMessages = categorisedMessages)
+    return render_template('dashboard.html', username=username, categorisedMessages = categorisedMessages, passwordAttempts=passwordAttempts)
 
 @app.route('/logout', methods=['GET', 'POST'])
 @login_required
@@ -261,31 +303,6 @@ def deleteAccount():
         db.session.commit()
     
     return redirect(url_for('logout'))
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    form = registrationForm()
-
-    if form.validate_on_submit():
-        try:
-            hashed_password = bcrypt.generate_password_hash(form.password.data)
-            hashedAnswer = bcrypt.generate_password_hash(form.securityAnswer.data)
-            new_user = User(username=form.username.data, 
-                            password=hashed_password,
-                            securityQuestion = form.securityQuestion.data, 
-                            securityAnswer = hashedAnswer
-                            )
-            db.session.add(new_user)
-            db.session.commit()
-        except SQLAlchemyError as e:
-            db.session.rollback
-            app.logger.error(f"Database error: {str(e)}")
-            flash('An error occurred while processing your request. Please try again later.', 'danger')
-            return render_template(url_for('register'), form=form)
-
-        return redirect(url_for('login'))
-
-    return render_template('register.html', form=form)
 
 @app.route('/user/<username>')
 @login_required
