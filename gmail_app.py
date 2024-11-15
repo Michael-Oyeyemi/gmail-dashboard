@@ -265,7 +265,10 @@ def dashboard():
                 return render_template(url_for('dashboard'))
             negative, neutral, positive = assignSentiments(messages)
         else:
-            negative, neutral, positive = [], [], []
+            emails = Email.query.filter_by(username=username).all()
+            negative = [message for message in emails if message.sentiment == 'negative']
+            neutral = [message for message in emails if message.sentiment == 'neutral']
+            positive = [message for message in emails if message.sentiment == 'positive']
     else:
         loadCredFile(user)
         emails = Email.query.filter_by(username=username).all()
