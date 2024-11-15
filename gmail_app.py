@@ -166,6 +166,7 @@ def login():
     return render_template('login.html', form=form)
 
 @app.route('/sendEmail/<recipient>', methods=['GET', 'POST'])
+@login_required
 def sendEmail(recipient):
     form = sendEmailForm()
     recipientEmail = re.search(r'<.*?>', recipient)
@@ -341,6 +342,7 @@ def analyseSentiment(text):
     return weightedSum
 
 @app.route('/linkNew')
+@login_required
 def linkNew():
     if Path('gmail_token.json').is_file():
         os.remove('gmail_token.json')
@@ -365,6 +367,7 @@ def linkNew():
     return redirect(url_for('loading'))
 
 @app.route('/deleteEmail/<email_id>')
+@login_required
 def deleteEmail(email_id):
     username = session.get('username')
     email = Email.query.filter_by(id=email_id).first()
