@@ -37,6 +37,18 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+def getCreateKey(file_path="key.txt"):
+    try:
+        with open(file_path, "r") as f:
+            key = f.read().strip()
+        print("Key loaded from file.")
+    except FileNotFoundError:
+        key = base64.urlsafe_b64encode(os.urandom(32)).decode("utf-8")
+        with open(file_path, "w") as f:
+            f.write(key)
+        print("New key generated and saved.")
+    return key
+
 class baseModel(db.Model):
     __abstract__ = True
 
@@ -44,7 +56,7 @@ class encryptedType(TypeDecorator):
     impl = String
 
     def __init__(self, *args, **kwargs):
-        self.key = base64.urlsafe_b64encode(os.urandom(32))
+        self.key = getCreateKey()
         self.fernet = Fernet(self.key)
         super().__init__(*args, **kwargs)
     
@@ -405,6 +417,44 @@ def deleteEmail(email_id):
     
     return redirect(url_for('loading'))
 
+@app.route('/reload')
+def reload():
+    session['reloadEmails'] = True
+    return redirect(url_for('loading'))
+
+@app.route('/loading')
+def loading():
+    return render_template('loading.html')
+
+@app.route('/resetPassword/<username>', methods=['GET', 'POST'])
+def resetPassword(username):
+    form = resetPasswordForm()
+    user = User.query.filter_by(username=username).first()
+    choices = {'motherMaiden': 'What is your mother\'s maiden name?',
+                'firstPet': 'What was your first pet\'s name?',
+                'homeTown': 'What city/town were you born in?'}
+    
+    if form.validate_on_submit():
+        hashedAnswer = bcrypt.check_password_hash(user.securityAnswer, form.securityAttempt.data)
+        same = bcrypt.check_password_hash(user.password, form.newPassword.data)
+        if hashedAnswer:
+            if not same:
+                try:
+                    newPasswordHashed = bcrypt.generate_password_hash(form.newPassword.data)
+                    user.password = newPasswordHashed
+                    db.session.commit()
+                    session['PasswordChanged'] = True
+                    return redirect(url_for('login'))
+                except SQLAlchemyError as e:
+                    db.session.rollback()
+                    app.logger.error(f"Database error: {str(e)}")
+                    flash('An error occurred while processing your request. Please try again later.', 'danger')
+            else:
+                flash('That is the same password you had before monkey', 'danger')
+        else:
+            flash('Incorrect answer to security question, Try again', 'danger')
+    
+    return render_template('resetPassword.html', form=form, question=choices[user.securityQuestion])
 
 def assignSentiments(messages):
     negative = []
@@ -481,46 +531,7 @@ def loadCredFile(user):
             with open(tokenFileName, 'w') as gmailtoken:
                 json.dump(json.loads(user.credentials), gmailtoken)
 
-@app.route('/reload')
-def reload():
-    session['reloadEmails'] = True
-    return redirect(url_for('loading'))
-
-@app.route('/loading')
-def loading():
-    return render_template('loading.html')
-
-@app.route('/resetPassword/<username>', methods=['GET', 'POST'])
-def resetPassword(username):
-    form = resetPasswordForm()
-    user = User.query.filter_by(username=username).first()
-    choices = {'motherMaiden': 'What is your mother\'s maiden name?',
-                'firstPet': 'What was your first pet\'s name?',
-                'homeTown': 'What city/town were you born in?'}
-    
-    if form.validate_on_submit():
-        hashedAnswer = bcrypt.check_password_hash(user.securityAnswer, form.securityAttempt.data)
-        same = bcrypt.check_password_hash(user.password, form.newPassword.data)
-        if hashedAnswer:
-            if not same:
-                try:
-                    newPasswordHashed = bcrypt.generate_password_hash(form.newPassword.data)
-                    user.password = newPasswordHashed
-                    db.session.commit()
-                    session['PasswordChanged'] = True
-                    return redirect(url_for('login'))
-                except SQLAlchemyError as e:
-                    db.session.rollback()
-                    app.logger.error(f"Database error: {str(e)}")
-                    flash('An error occurred while processing your request. Please try again later.', 'danger')
-            else:
-                flash('That is the same password you had before monkey', 'danger')
-        else:
-            flash('Incorrect answer to security question, Try again', 'danger')
-    
-    return render_template('resetPassword.html', form=form, question=choices[user.securityQuestion])
-
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=4000)
