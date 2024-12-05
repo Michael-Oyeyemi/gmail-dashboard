@@ -195,6 +195,24 @@ footer p {
     overflow-y: auto;
 }
 
+#adminUserList {
+    padding: 1px;
+    height: 200px;
+    overflow-y: auto;
+}
+
+#userList {
+    padding: 1px;
+    height: 200px;
+    overflow-y: auto;
+}
+
+#listContainer {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
 .email-content{
     height: 300px;
     overflow-y: auto;

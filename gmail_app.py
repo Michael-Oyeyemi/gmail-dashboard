@@ -49,8 +49,10 @@ def getCreateKey(file_path="key.txt"):
         print("New key generated and saved.")
     return key
 
-class baseModel(db.Model):
+class baseDatabaseModel(db.Model):
     __abstract__ = True
+    createdAt = db.Column(db.DateTime, default=datetime.now)
+    updatedAt = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
 class encryptedType(TypeDecorator):
     impl = String
@@ -70,19 +72,21 @@ class encryptedType(TypeDecorator):
             value = self.fernet.decrypt(value.encode()).decode()
         return value
 
-class User(baseModel, UserMixin):
+class User(baseDatabaseModel, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
     credentials = db.Column(encryptedType, nullable=True)
     emailsLoaded = db.Column(db.DateTime, nullable=True)
     emails = db.relationship('Email', back_populates='user', cascade='all, delete-orphan')
-    securityQuestion = db.Column(db.String(50), nullable=False)
-    securityAnswer = db.Column(db.String(120), nullable=False)
+    securityQuestion = db.Column(db.String(50), nullable=True)
+    securityAnswer = db.Column(db.String(120), nullable=True)
     passwordAttempts = db.Column(db.Integer, nullable=False, default=0)
     locked = db.Column(db.Boolean, nullable=False, default=False)
+    type = db.Column(db.Integer, nullable=False)
+    lastLogin = db.Column(db.DateTime, nullable=True)
 
-class Email(baseModel):
+class Email(baseDatabaseModel):
     id = db.Column(db.String(32), primary_key=True)
     sender = db.Column(db.String(320), nullable=False)
     date = db.Column(db.DateTime())
@@ -117,9 +121,9 @@ class registrationForm(baseForm):
     submit = SubmitField("Register")
 
     def validate_username(self, username):
-        existing_user_username = User.query.filter_by(username=username.data).first()
+        existingUserUsername = User.query.filter_by(username=username.data).first()
 
-        if existing_user_username:
+        if existingUserUsername:
             raise ValidationError("Username taken, please use a different one.")
         
 class loginForm(baseForm):
@@ -149,6 +153,37 @@ class resetPasswordForm(baseForm):
     
     submit = SubmitField('Change Password')
 
+class resetUserPasswordForm(baseForm):
+    newPassword = PasswordField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={'placeholder': 'New Password'})
+    
+    confirmPassword = PasswordField(validators=[InputRequired(), EqualTo('newPassword', message='Passwords must match.')], render_kw={'placeholder': 'Confirm password'})
+    
+    submit = SubmitField('Reset Password')
+
+class editUsernameForm(baseForm):
+    newUsername = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={'placeholder': 'New Username'})
+    
+    submit = SubmitField('Change Username')
+
+    def validate_username(self, newUsername):
+        existingUserUsername = User.query.filter_by(username=newUsername.data).first()
+
+        if existingUserUsername:
+            raise ValidationError("Username taken, please use a different one.")
+
+class RegisterAdminForm(baseForm):
+    username = StringField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
+
+    password = PasswordField(validators=[InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Password"})
+    
+    submit = SubmitField("Register")
+
+    def validate_username(self, username):
+        existingUserUsername = User.query.filter_by(username=username.data).first()
+
+        if existingUserUsername:
+            raise ValidationError("Username taken, please use a different one.")
+
 class sendEmailForm(baseForm):
     
     subject = StringField(validators=[InputRequired(), Length(min=1, max=255)], render_kw={'placeholder': 'Subject'})
@@ -169,20 +204,21 @@ def register():
 
     if form.validate_on_submit():
         try:
-            hashed_password = bcrypt.generate_password_hash(form.password.data)
+            hashedPassword = bcrypt.generate_password_hash(form.password.data)
             hashedAnswer = bcrypt.generate_password_hash(form.securityAnswer.data)
-            new_user = User(username=form.username.data, 
-                            password=hashed_password,
+            newUser = User(username=form.username.data, 
+                            password=hashedPassword,
                             securityQuestion = form.securityQuestion.data, 
-                            securityAnswer = hashedAnswer
+                            securityAnswer = hashedAnswer,
+                            type=1
                             )
-            db.session.add(new_user)
+            db.session.add(newUser)
             db.session.commit()
         except SQLAlchemyError as e:
             db.session.rollback
             app.logger.error(f"Database error: {str(e)}")
             flash('An error occurred while processing your request. Please try again later.', 'danger')
-            return render_template(url_for('register'), form=form)
+            return render_template('register.html', form=form)
 
         return redirect(url_for('login'))
 
@@ -202,7 +238,10 @@ def login():
             login_user(user)
             session['username'] = form.username.data
             
-            return redirect(url_for('loading'))
+            if user.type == 1:
+                return redirect(url_for('loading'))
+            else:
+                return redirect(url_for('adminDashboard'))
         else:
             if user:
                 user.passwordAttempts += 1
@@ -252,6 +291,8 @@ def dashboard():
 
     if not user:
         return redirect(url_for('login'))
+    
+    user.lastLogin = datetime.now()
     
     reload = session.get('reloadEmails', False)
 
@@ -307,6 +348,91 @@ def logout():
     if Path(f'gmail_token_{username}.json').is_file():
         os.remove(f'gmail_token_{username}.json')
     return redirect(url_for('home'))
+
+@app.route('/adminDashboard', methods=['GET', 'POST'])
+@login_required
+def adminDashboard():
+    return render_template('adminDashboard.html')
+
+@app.route('/adminDataPage', methods=['GET', 'POST'])
+@login_required
+def adminDataPage():
+
+    overallSentimentCounts = {
+        'positive': Email.query.filter_by(sentiment='positive').count(),
+        'negative': Email.query.filter_by(sentiment='negative').count(),
+        'neutral': Email.query.filter_by(sentiment='neutral').count()
+    }
+
+    users = User.query.all()
+    return None
+
+@app.route('/adminUserManagement', methods=['GET', 'POST'])
+@login_required
+def adminUserManagement():
+    users = User.query.all()
+    return render_template('adminUserManagement.html', users=users)
+
+@app.route('/adminUserManagement/<username>', methods=['GET', 'POST'])
+@login_required
+def adminUserManagementUser(username):
+    user = User.query.filter_by(username=username).first()
+    return render_template('adminUserManagementUser.html', user=user)
+
+@app.route('/deleteUser/<username>', methods=['GET', 'POST'])
+@login_required
+def deleteUser(username):
+    user = User.query.filter_by(username=username).first()
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+    return redirect(url_for('adminUserManagement'))
+
+@app.route('/resetUserPassword/<username>', methods=['GET', 'POST'])
+@login_required
+def resetUserPassword(username):
+    form = resetUserPasswordForm()
+    user = User.query.filter_by(username=username).first()
+    if form.validate_on_submit():
+        hashedPassword = bcrypt.generate_password_hash(form.newPassword.data)
+        user.password = hashedPassword
+        db.session.commit()
+        return redirect(url_for('adminUserManagement'))
+    return render_template('resetUserPassword.html', form=form, user=user)
+
+@app.route('/editUsername/<username>', methods=['GET', 'POST'])
+@login_required
+def editUsername(username):
+    form = editUsernameForm()
+    user = User.query.filter_by(username=username).first()
+    if form.validate_on_submit():
+        user.username = form.newUsername.data
+        db.session.commit()
+        return redirect(url_for('adminUserManagement'))
+    return render_template('editUsername.html', form=form, user=user)
+
+@app.route('/registerAdmin', methods=['GET', 'POST'])
+@login_required
+def registerAdmin():
+    form = RegisterAdminForm()
+    if form.validate_on_submit():
+        try:
+            hashedPassword = bcrypt.generate_password_hash(form.password.data)
+            newUser = User(username=form.username.data, 
+                            password=hashedPassword,
+                            type=2
+                            )
+            db.session.add(newUser)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            db.session.rollback
+            app.logger.error(f"Database error: {str(e)}")
+            flash('An error occurred while processing your request. Please try again later.', 'danger')
+            return render_template('registerAdmin.html', form=form)
+
+        return redirect(url_for('adminUserManagement'))
+
+    return render_template('registerAdmin.html', form=form)
 
 @app.route('/deleteAccount', methods=['GET', 'POST'])
 @login_required
@@ -450,9 +576,10 @@ def resetPassword(username):
                     app.logger.error(f"Database error: {str(e)}")
                     flash('An error occurred while processing your request. Please try again later.', 'danger')
             else:
-                flash('That is the same password you had before monkey', 'danger')
+                flash('You cannot use the same password as before.', 'danger')
+                return render_template('resetPassword.html', form=form, questions=choices[user.securityQuestion])
         else:
-            flash('Incorrect answer to security question, Try again', 'danger')
+            flash('Incorrect answer to security question, Try again.', 'danger')
     
     return render_template('resetPassword.html', form=form, question=choices[user.securityQuestion])
 
@@ -519,7 +646,7 @@ def initialLoad(user):
     
     gmail = Gmail(creds_file=tokenFileName)
 
-    messages = gmail.get_messages(query='category:primary')
+    messages = gmail.get_messages()
     
     return messages
 
@@ -534,4 +661,21 @@ def loadCredFile(user):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, host='0.0.0.0', port=4000)
+        adminAccount = User.query.filter_by(username = 'admin1').first()
+        if not adminAccount:
+            hashedPassword = bcrypt.generate_password_hash('34fjbn6943')
+            newUser = User(username='admin1', 
+                            password=hashedPassword,
+                            type=2
+                            )
+            db.session.add(newUser)
+            db.session.commit()
+            for i in range(2,15):
+                newUser = User(username=f'admin{i}', 
+                            password=hashedPassword,
+                            type=2
+                            )
+                db.session.add(newUser)
+                db.session.commit()
+
+    app.run(debug=True)

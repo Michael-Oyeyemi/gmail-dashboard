@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Edit Username
+{% endblock %}
+
+{% block content %}
+<div class="centered-box">
+    <div class="box">
+        <h1>Edit Username</h1>
+        <p>Current Username: {{ user.username }}</p>
+        <br>
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            
+            <label for="newUsername">New Username</label>
+            {{ form.newUsername }}
+            {% for error in form.newUsername.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+            <br>
+            
+            {{ form.submit }}
+        </form>
+        <a href="{{ url_for('adminUserManagementUser', username=user.username) }}" class="home-button">Return</a>
+    </div>
+</div>
+{% endblock %}

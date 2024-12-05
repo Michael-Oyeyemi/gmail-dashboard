@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}
+adminDashboard
+{% endblock %}
+
+{% block content %}
+<div class="centered-box">
+    <div class="box">
+        <h1>Admin Page</h1>
+        <a href="{{ url_for('adminDataPage') }}" class="home-button">Analytics</a>
+        <a href="{{ url_for('adminUserManagement') }}" class="home-button">User Management</a>
+        <a class="home-button" href="{{ url_for('logout') }}" id="Delete">Logout</a>
+    </div>
+</div>
+{% endblock %}

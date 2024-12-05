@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ user.username }}
+{% endblock %}
+
+{% block content %}
+<div id="usernameBox" class="box">
+    <p>Username: {{ user.username }}</p>
+    <a href="{{ url_for('adminUserManagement') }}" class="home-button">Return</a>
+    <a href="{{ url_for('editUsername', username=user.username) }}" class="home-button">Edit Username</a>
+    <a href="{{ url_for('resetUserPassword', username=user.username) }}" class="home-button">Reset User Password</a>
+    <a href="{{ url_for('deleteUser', username=user.username) }}" class="home-button" id="Delete">Delete User</a>
+    <p>Account Created: {{ user.createdAt }}</p>
+    <p>Last login: {{ user.lastLogin }}</p>
+</div>
+{% endblock %}

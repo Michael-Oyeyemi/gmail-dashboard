@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}
+User Management
+{% endblock %}
+
+{% block content %}
+<div id="listContainer">
+
+    <div id="usernameBox" class="box">
+        <p style="color: #00bfae; text-decoration: underline;">User accounts</p>
+        <br>
+        <ul id= "userList" class="message-list">
+            {% for user in users %}
+                {% if user.type == 1 %}
+                <li><a href="{{ url_for('adminUserManagementUser', username=user.username) }}" >{{user.username}}</a></li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div id="adminUsernameBox" class="box">
+        <p style="color: #00bfae; text-decoration: underline;">Admin accounts</p>
+        <br>
+        <ul id= "adminUserList" class="message-list">
+            {% for user in users %}
+                {% if user.type == 2 %}
+                <li><a href="{{ url_for('adminUserManagementUser', username=user.username) }}" >{{user.username}}</a></li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+        <a class="home-button" href="{{ url_for('registerAdmin') }}" id="Return">Create Admin</a>
+    </div>
+</div>
+<a class="home-button" href="{{ url_for('logout') }}" id="Delete">Logout</a>
+<a class="home-button" href="{{ url_for('adminDashboard') }}" id="Return">Return</a>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Create Admin
+{% endblock %}
+
+{% block content %}
+<div class="centered-box">
+    <div class="box">
+        <h1>Create New Admin</h1>
+        <br>
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            
+            <label for="username">Admin Username</label>
+            {{ form.username }}
+            {% for error in form.username.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+            <br>
+
+            <label for="username">Admin password</label>
+            {{ form.password }}
+            {% for error in form.password.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+            <br>
+            
+            {{ form.submit }}
+        </form>
+        <a href="{{ url_for('adminUserManagement') }}" class="home-button">Return</a>
+    </div>
+</div>
+{% endblock %}
