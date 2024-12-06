@@ -232,7 +232,7 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user and user.locked:
-            flash('Account locked due to too many failed login attempts', 'danger')
+            flash('Account locked', 'danger')
             return redirect(url_for('login'))
         if user and bcrypt.check_password_hash(user.password, form.password.data):
             login_user(user)
