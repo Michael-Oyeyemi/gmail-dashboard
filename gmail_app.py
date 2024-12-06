@@ -447,7 +447,7 @@ def deleteAccount():
 
 @app.route('/user/<username>')
 @login_required
-def user_profile(username):
+def userProfile(username):
     user = User.query.filter_by(username=username).first()
     if not user:
         return "User not found", 404
@@ -523,6 +523,23 @@ def linkNew():
     session['reloadEmails'] = True
     
     return redirect(url_for('loading'))
+
+@app.route('/reset/<username>', methods=['GET', 'POST'])
+@login_required
+def reset(username):
+    user = User.query.filter_by(username=username).first()
+    form = resetUserPasswordForm()
+    if form.validate_on_submit():
+        hashedPassword = bcrypt.generate_password_hash(form.newPassword.data)
+        user.password = hashedPassword
+        db.session.commit()
+        if user.type == 1:
+            return redirect(url_for('loading'))
+        else:
+            return redirect(url_for('adminUserManagement'))
+        
+    return render_template('reset.html', form=form, user=user)
+    
 
 @app.route('/deleteEmail/<email_id>')
 @login_required

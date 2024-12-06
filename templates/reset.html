@@ -27,7 +27,11 @@ Reset Password
             
             {{ form.submit }}
         </form>
-        <a href="{{ url_for('adminUserManagementUser', username=user.username) }}" class="home-button">Return</a>
+        {% if user.type == 2 %}
+        <a href="{{ url_for('adminUserManagement') }}" class="home-button">Return</a>
+        {% else %}
+        <a href="{{ url_for('userProfile', username=user.usernamex) }}" class="home-button">Return</a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
