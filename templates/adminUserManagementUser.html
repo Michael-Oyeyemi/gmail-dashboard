@@ -16,8 +16,13 @@
     {% if not user.locked %}
     <a href="{{ url_for('lock', username=user.username) }}" class="home-button">Lock Account</a>
     {% endif %}
-    <a href="{{ url_for('deleteUser', username=user.username) }}" class="home-button" id="Delete">Delete User</a>
+    <a href="{{ url_for('deleteUser', username=user.username) }}" class="home-button" id="Delete" onclick="return confirmDelete()">Delete User</a>
     <p>Account Created: {{ user.createdAt }}</p>
     <p>Last login: {{ user.lastLogin }}</p>
 </div>
+<script>
+    function confirmDelete() {
+        return confirm("Are you sure you want to delete this user?");
+    }
+</script>
 {% endblock %}

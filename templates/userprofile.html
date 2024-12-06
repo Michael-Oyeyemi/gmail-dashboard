@@ -19,7 +19,7 @@ User Profile
                 <a href="{{ url_for('dashboard') }}" class="home-button">Return</a>
                 <a class="home-button" href="{{ url_for('linkNew') }}">Link a different gmail</a>
                 <a class="home-button" href="{{ url_for('reset', username=user.username) }}">Reset Password</a>
-                <a href="{{ url_for('deleteAccount') }}" class="home-button" id="Delete">Delete Account</a>
+                <a href="{{ url_for('deleteAccount') }}" class="home-button" id="Delete" onclick="return confirmDelete()">Delete Account</a>
             </div>
 
             <div class="chart">
@@ -51,6 +51,10 @@ User Profile
     };
 
     Plotly.newPlot('sentiment-chart', data, layout);
+
+    function confirmDelete() {
+        return confirm("Are you sure you want to delete your account?");
+    }
 </script>
 
 
