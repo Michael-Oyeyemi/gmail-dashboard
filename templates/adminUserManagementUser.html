@@ -10,6 +10,12 @@
     <a href="{{ url_for('adminUserManagement') }}" class="home-button">Return</a>
     <a href="{{ url_for('editUsername', username=user.username) }}" class="home-button">Edit Username</a>
     <a href="{{ url_for('resetUserPassword', username=user.username) }}" class="home-button">Reset User Password</a>
+    {% if user.locked %}
+    <a href="{{ url_for('unlock', username=user.username) }}" class="home-button">Unlock Account</a>
+    {% endif %}
+    {% if not user.locked %}
+    <a href="{{ url_for('lock', username=user.username) }}" class="home-button">Lock Account</a>
+    {% endif %}
     <a href="{{ url_for('deleteUser', username=user.username) }}" class="home-button" id="Delete">Delete User</a>
     <p>Account Created: {{ user.createdAt }}</p>
     <p>Last login: {{ user.lastLogin }}</p>

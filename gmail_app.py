@@ -434,6 +434,22 @@ def registerAdmin():
 
     return render_template('registerAdmin.html', form=form)
 
+@app.route('/unlock/<username>', methods=['GET', 'POST'])
+@login_required
+def unlock(username):
+    user = User.query.filter_by(username=username).first()
+    user.locked = False
+    db.session.commit()
+    return redirect(url_for('adminUserManagement'))
+
+@app.route('/lock/<username>', methods=['GET', 'POST'])
+@login_required
+def lock(username):
+    user = User.query.filter_by(username=username).first()
+    user.locked = True
+    db.session.commit()
+    return redirect(url_for('adminUserManagement'))
+
 @app.route('/deleteAccount', methods=['GET', 'POST'])
 @login_required
 def deleteAccount():
