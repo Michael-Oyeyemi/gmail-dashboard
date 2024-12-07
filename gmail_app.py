@@ -354,9 +354,9 @@ def logout():
 def adminDashboard():
     return render_template('adminDashboard.html')
 
-@app.route('/adminDataPage', methods=['GET', 'POST'])
+@app.route('/analytics', methods=['GET', 'POST'])
 @login_required
-def adminDataPage():
+def analytics():
 
     overallSentimentCounts = {
         'positive': Email.query.filter_by(sentiment='positive').count(),
@@ -365,7 +365,7 @@ def adminDataPage():
     }
 
     users = User.query.all()
-    return None
+    return render_template('analytics.html', overallSentimentCounts=overallSentimentCounts, users=users)
 
 @app.route('/adminUserManagement', methods=['GET', 'POST'])
 @login_required
