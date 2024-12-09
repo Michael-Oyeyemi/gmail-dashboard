@@ -365,7 +365,12 @@ def analytics():
     }
 
     users = User.query.all()
-    return render_template('analytics.html', overallSentimentCounts=overallSentimentCounts, users=users)
+
+    emails = Email.query.all()
+
+    mostRecentEmails = Email.query.order_by(Email.date.desc()).limit(5).all()
+
+    return render_template('analytics.html', overallSentimentCounts=overallSentimentCounts, users=users, emails=emails, mostRecent = mostRecentEmails[0])
 
 @app.route('/adminUserManagement', methods=['GET', 'POST'])
 @login_required
