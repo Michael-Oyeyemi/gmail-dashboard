@@ -364,7 +364,7 @@ def analytics():
         'neutral': Email.query.filter_by(sentiment='neutral').count()
     }
 
-    users = User.query.all()
+    users = User.query.order_by(User.lastLogin.desc()).all()
 
     emails = Email.query.all()
 
