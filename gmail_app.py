@@ -684,7 +684,7 @@ def initialLoad(user):
     
     gmail = Gmail(creds_file=tokenFileName)
 
-    messages = gmail.get_messages()
+    messages = gmail.get_messages(query='category:primary')
     
     return messages
 
